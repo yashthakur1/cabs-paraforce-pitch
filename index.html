@@ -3,6 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<script>
+/* Android Chrome sizes 100dvh to whatever toolbar state was active when the page
+   loaded, and — because the app shell is position:fixed — doesn't reliably
+   re-measure it as the address bar shows/hides. That leaves fixed-bottom
+   elements (the footer button, the tab bar) sitting partly behind Chrome's own
+   UI. Measure the true visible viewport in JS instead and feed it to CSS as a
+   custom property; runs before first paint, and again on every resize. */
+(function(){
+  var root = document.documentElement;
+  function setVH(){
+    var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    root.style.setProperty('--app-vh', (h * 0.01) + 'px');
+  }
+  setVH();
+  addEventListener('resize', setVH);
+  addEventListener('orientationchange', setVH);
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize', setVH);
+    visualViewport.addEventListener('scroll', setVH);
+  }
+})();
+</script>
 <title>Cab Captain App — Cabs Paraforce</title>
 <meta name="description" content="Interactive prototype of the Cabs Paraforce captain app — onboarding, verification and document compliance for ex-servicemen drivers.">
 
@@ -360,7 +382,10 @@ body{
   body{
     display:block;background:var(--paper);color:var(--ink);
     position:fixed;top:0;left:0;right:0;
-    height:100vh;height:100dvh;                     /* dvh so the URL bar can't clip the app */
+    min-height:0;                                   /* the base rule's min-height:100vh would otherwise
+                                                         clamp the shorter, real height back up */
+    height:100vh;height:100dvh;                     /* first-paint fallback, before JS runs */
+    height:calc(var(--app-vh, 1vh) * 100);          /* then: the real, JS-measured viewport — see head script */
     overflow:hidden;
     -webkit-tap-highlight-color:transparent;
     -webkit-user-select:none;user-select:none;
